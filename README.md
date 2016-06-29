@@ -58,5 +58,43 @@ __all__ = [ "bar", "baz", "foo", "wat" ]
 
 Based on that output, there's clearly lots of work to actually be done :).
 
+The file structure looks like:
+
+```
+output
+└── Foo
+    ├── externs.json
+    └── __init__.py
+```
+
+So, you should be able to fire up a python interpreter and use the compiled file:
+
+```
+➜  pyrescript git:(master) ipython
+Python 3.5.1 (default, Mar  3 2016, 09:29:07)
+Type "copyright", "credits" or "license" for more information.
+
+IPython 4.0.0 -- An enhanced Interactive Python.
+?         -> Introduction and overview of IPython's features.
+%quickref -> Quick reference.
+help      -> Python's own help system.
+object?   -> Details about 'object', use 'object??' for extra details.
+
+In [1]: import output.Foo
+
+In [2]: output.Foo.bar
+Out[2]: True
+
+In [3]: output.Foo.baz
+Out[3]: False
+
+In [4]: output.Foo.foo
+Out[4]: 1
+
+In [5]: output.Foo.wat([1,2,3])(None)
+Out[5]: [1, 2, 3]
+
+```
+
 [1]: https://github.com/Gabriel439/Purescript-to-Python
 [2]: http://docs.haskellstack.org/en/stable/README/#how-to-install
