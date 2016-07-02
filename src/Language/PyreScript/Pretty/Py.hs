@@ -56,6 +56,8 @@ literals = mkPattern' match'
     [ withIndent $ prettyStatements sts
     ]
   match (JSVar _ ident) = return $ emit ident
+  match (JSVariableIntroduction _ ident (Just (JSFunction ss Nothing args value))) =
+    match (JSFunction ss (Just ident) args value)
   match (JSVariableIntroduction _ ident value) = mconcat <$> sequence
     [ return $ emit ident
     , maybe (return mempty) (fmap (emit " = " <>) . prettyPrintJS') value
@@ -85,7 +87,8 @@ literals = mkPattern' match'
     , maybe (return mempty) (fmap (emit " else:" <>) . prettyPrintJS') elses
     ]
   match (JSReturn _ value) = mconcat <$> sequence
-    [ prettyPrintJS' value
+    [ return $ emit "return "
+    , prettyPrintJS' value
     ]
   match (JSThrow _ value) = mconcat <$> sequence
     [ return $ emit "throw "
@@ -117,6 +120,18 @@ literals = mkPattern' match'
     removeComments (c : s) = c : removeComments s
 
     removeComments [] = []
+  match (JSFunction _ (Just ident) args js) = mconcat <$> sequence
+    [ return $ emit $ "def " ++ ident ++ "(" ++ intercalate ", " args ++ "):\n"
+    , prettyPrintJS' js
+    ]
+  match (JSFunction _ Nothing args (JSBlock _ [JSReturn _ value])) = mconcat <$> sequence
+    [ return $ emit $ "lambda " ++ intercalate ", " args ++ ": "
+    , prettyPrintJS' value
+    ]
+  match (JSFunction _ Nothing args js) = mconcat <$> sequence
+    [ return $ emit $ "lambda " ++ intercalate ", " args ++ ": "
+    , prettyPrintJS' js
+    ]
   match (JSRaw _ js) = return $ emit js
   match _ = mzero
 
@@ -251,11 +266,6 @@ prettyPrintJS' = A.runKleisli $ runPattern matchValue
                   , [ Wrap indexer $ \index val -> val <> emit "[" <> index <> emit "]" ]
                   , [ Wrap app $ \args val -> val <> emit "(" <> args <> emit ")" ]
                   , [ unary JSNew "new " ]
-                  , [ Wrap lam $ \(name, args, ss) ret -> addMapping' ss <>
-                      emit ("lambda "
-                        ++ fromMaybe "" name
-                        ++ intercalate ", " args ++ ": ")
-                        <> ret ]
                   , [ Wrap typeOf $ \_ s -> emit "type(" <> s <> emit ")" ]
                   , [ unary     Not                  "not "
                     , unary     BitwiseNot           "~"
